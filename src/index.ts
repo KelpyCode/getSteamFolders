@@ -34,9 +34,3 @@ export async function getSteamLibraryLocations(): Promise<false | string[]> {
 
     return lines
 }
-
-
-
-~async function () {
-    console.log('Main loc', await getSteamLibraryLocations())
-}()
