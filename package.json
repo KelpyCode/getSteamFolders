@@ -1,6 +1,6 @@
 {
   "name": "getsteamfolders",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Get all used steam folders on the system",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
