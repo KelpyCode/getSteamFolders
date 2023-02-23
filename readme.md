@@ -2,6 +2,7 @@
 
 # Intro
 This package helps finding all Steam folders, incase you want to look for game folders without any user input.
+Now dependency less!
 
 # Usage
 

@@ -1,7 +1,6 @@
-import _regedit from 'regedit'
 import fs from 'fs'
 import path from 'path'
-const regedit = _regedit.promisified
+import childProcess from 'child_process'
 
 
 const REG_STEAM_PATH_32 = 'HKLM\\SOFTWARE\\Valve\\Steam'
@@ -9,14 +8,29 @@ const REG_STEAM_PATH_64 = 'HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam'
 const LIBRARY_FOLDERS_STEAM_PATH = path.join('steamapps', 'libraryfolders.vdf')
 const COMMON_STEAM_PATH = path.join('steamapps', 'common')
 
-export async function getSteamMainLocation(): Promise<false | string> {
-    const res = await regedit.list([REG_STEAM_PATH_32, REG_STEAM_PATH_64])
 
-    const steamPath = res[REG_STEAM_PATH_32].values.InstallPath || res[REG_STEAM_PATH_64].values.InstallPath
+async function shellExecute(
+    command: string
+): Promise<{
+  error: childProcess.ExecException | null;
+  stdout: string;
+  stderr: string;
+}> {
+    return new Promise((resolve) => {
+        childProcess.exec(command, function (error, stdout, stderr) {
+            resolve({ error, stdout, stderr })
+        })
+    })
+}
+
+
+
+export async function getSteamMainLocation(): Promise<false | string> {
+    const steamPath = await getInstallPath(REG_STEAM_PATH_32) || await getInstallPath(REG_STEAM_PATH_64)
 
     if (!steamPath) return false
     
-    return steamPath.value as string
+    return steamPath
 }
 
 /**
@@ -81,4 +95,14 @@ export async function getSteamGameLocation(searchName: string, contains = false)
     if(!key) return false
 
     return allGames[key]
+}
+
+async function getInstallPath(regPath: string): Promise<string | false> {
+    const res = await shellExecute('reg query ' + regPath + ' /V InstallPath')
+
+    if (!res.error) {
+        const path = res.stdout.split('REG_SZ')[1].trim()
+        return path
+    }
+    return false
 }
