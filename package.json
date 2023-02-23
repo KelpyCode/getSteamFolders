@@ -1,6 +1,6 @@
 {
   "name": "getsteamfolders",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Get all used steam folders on the system",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -12,7 +12,7 @@
     "test": "npm run build && node lib/index.js",
     "build": "tsc"
   },
-  "keywords": [],
+  "keywords": ["steam", "folder", "path", "windows", "steamapps", "location", "games", "directory"],
   "author": "Kelpy",
   "license": "ISC",
   "devDependencies": {
