@@ -1,7 +1,7 @@
 {
   "name": "getsteamfolders",
-  "version": "1.0.4",
-  "description": "Get all used steam folders on the system",
+  "version": "1.0.5",
+  "description": "Get all used steam folders on the system, find game specific folder paths easily and parse steam files",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "repository": {
@@ -12,7 +12,7 @@
     "test": "npm run build && node lib/index.js",
     "build": "tsc"
   },
-  "keywords": ["steam", "folder", "path", "windows", "steamapps", "location", "games", "directory"],
+  "keywords": ["steam", "folder", "path", "windows", "steamapps", "location", "games", "directory", "parse"],
   "author": "Kelpy",
   "license": "ISC",
   "devDependencies": {
