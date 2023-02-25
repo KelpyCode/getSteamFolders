@@ -1,10 +1,12 @@
 import fs from 'fs'
 import path from 'path'
 import childProcess from 'child_process'
+import { parseValveData } from './valveParser'
 
 
 const REG_STEAM_PATH_32 = 'HKLM\\SOFTWARE\\Valve\\Steam'
 const REG_STEAM_PATH_64 = 'HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam'
+const LINUX_INSTALL_PATH = '~/.steam'
 const LIBRARY_FOLDERS_STEAM_PATH = path.join('steamapps', 'libraryfolders.vdf')
 const COMMON_STEAM_PATH = path.join('steamapps', 'common')
 
@@ -23,12 +25,27 @@ async function shellExecute(
     })
 }
 
+const isWin = process.platform === 'win32'
 
+let cacheSteamMainLocation: string | null = null
+let cacheSteamLibraryLocations: string[] | null = null
+let cacheSteamGameLocations: Record<string, string> | null = null
+
+
+export function clearCache(): void {
+    cacheSteamMainLocation = null
+    cacheSteamLibraryLocations = null
+    cacheSteamGameLocations = null
+}
 
 export async function getSteamMainLocation(): Promise<false | string> {
-    const steamPath = await getInstallPath(REG_STEAM_PATH_32) || await getInstallPath(REG_STEAM_PATH_64)
+    if(cacheSteamMainLocation) return cacheSteamMainLocation
+
+    const steamPath = isWin ? await getInstallPath(REG_STEAM_PATH_32) || await getInstallPath(REG_STEAM_PATH_64) : LINUX_INSTALL_PATH
 
     if (!steamPath) return false
+
+    cacheSteamMainLocation = steamPath
     
     return steamPath
 }
@@ -38,6 +55,8 @@ export async function getSteamMainLocation(): Promise<false | string> {
  * @returns  Array of paths to Steam library folders
  */
 export async function getSteamLibraryLocations(ignoreInvalid = true): Promise<string[]> {
+    if (cacheSteamLibraryLocations) return cacheSteamLibraryLocations
+    
     const mainPath = await getSteamMainLocation()
     if (!mainPath) return []
     
@@ -46,15 +65,17 @@ export async function getSteamLibraryLocations(ignoreInvalid = true): Promise<st
     if (!fs.existsSync(libraryFoldersPath)) return []
     
     const content = fs.readFileSync(libraryFoldersPath, 'utf8')
-    const lines = content.split('\n').filter(x => x.indexOf('\\') >= 0).map(x => {
-        const parts = x.replace('"path"', '').split('"')
-        return parts[1].replace(/\\\\/g, '\\')
-    }).filter(x => {
+
+    const parsed = parseValveData<Valve.LibraryConfig>(content)
+
+    const paths = Object.values(parsed.libraryfolders).map(x => x.path).filter(x => {
         if (!ignoreInvalid) return true
         return fs.existsSync(x)
     })
 
-    return lines
+    cacheSteamLibraryLocations = paths
+
+    return paths
 }
 
 
@@ -62,6 +83,8 @@ export async function getSteamLibraryLocations(ignoreInvalid = true): Promise<st
  * @returns Object with the game name as key and the path as value
  */
 export async function getAllSteamGames(): Promise<Record<string, string>> {
+    if (cacheSteamGameLocations) return cacheSteamGameLocations
+
     const result: Record<string, string> = {}
     
     const steamLocs = await getSteamLibraryLocations(true)
@@ -71,6 +94,8 @@ export async function getAllSteamGames(): Promise<Record<string, string>> {
         const entries = fs.readdirSync(directory)
         entries.forEach(gameName => result[gameName] = path.join(directory, gameName))
     })
+
+    cacheSteamGameLocations = result
 
     return result
 }
@@ -84,7 +109,7 @@ export async function getAllSteamGames(): Promise<Record<string, string>> {
 export async function getSteamGameLocation(searchName: string, contains = false): Promise<false | string> {
     const allGames = await getAllSteamGames()
     
-    const stringMatchReplacer = (x: string) => x.toLowerCase().replace(/ /g, '')
+    const stringMatchReplacer = (x: string) => x.toLowerCase().replace(/[^a-zA-Z0-9]/gi, '')
 
     const key = Object.keys(allGames).find((game) =>
         contains
@@ -106,3 +131,5 @@ async function getInstallPath(regPath: string): Promise<string | false> {
     }
     return false
 }
+
+export const parse = parseValveData
