@@ -5,6 +5,7 @@
     "target": "es5",
     "module": "commonjs",
     "declaration": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "outDir": "./lib",
     /* Basic Options */
     // "incremental": true,                   /* Enable incremental compilation */
